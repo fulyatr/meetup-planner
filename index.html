@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>When Can We Meet?</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream: #faf7f2;
+    --warm-white: #fff9f2;
+    --ink: #1a1612;
+    --muted: #8a7f74;
+    --border: #e8e0d5;
+    --shadow: rgba(26,22,18,0.08);
+    --green: #2baa72;
+    --green-light: #e3f7ee;
+    --red: #e05c3a;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 2rem 1rem 4rem;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0;
+  }
+
+  .wrap { max-width: 900px; margin: 0 auto; position: relative; z-index: 1; }
+
+  header { text-align: center; margin-bottom: 3rem; }
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 700; letter-spacing: -0.02em; line-height: 1.1;
+  }
+  header h1 span { color: var(--red); }
+  header p { margin-top: 0.75rem; color: var(--muted); font-size: 1rem; font-weight: 300; }
+
+  /* ── SETUP SCREEN ── */
+  .setup-screen {
+    background: var(--warm-white); border: 1px solid var(--border);
+    border-radius: 20px; padding: 2.5rem; box-shadow: 0 2px 20px var(--shadow);
+    max-width: 560px; margin: 0 auto;
+  }
+  .setup-screen h2 { font-family: 'Playfair Display', serif; font-size: 1.4rem; margin-bottom: 0.5rem; }
+  .setup-screen > p { color: var(--muted); font-size: 0.88rem; line-height: 1.6; margin-bottom: 1.5rem; }
+
+  .steps { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.75rem; }
+  .step {
+    display: flex; gap: 0.9rem; align-items: flex-start;
+    padding: 0.9rem 1rem; background: var(--cream); border-radius: 12px; border: 1px solid var(--border);
+  }
+  .step-num {
+    width: 26px; height: 26px; border-radius: 50%; background: var(--ink); color: #fff;
+    font-size: 0.78rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .step-text { font-size: 0.85rem; line-height: 1.5; color: var(--ink); }
+  .step-text a { color: var(--red); text-decoration: none; font-weight: 600; }
+  .step-text a:hover { text-decoration: underline; }
+
+  .setup-fields { display: flex; flex-direction: column; gap: 0.75rem; }
+  .setup-fields label { font-size: 0.8rem; font-weight: 600; color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase; display: block; margin-bottom: 0.3rem; }
+  .setup-fields input {
+    width: 100%; padding: 0.75rem 1rem;
+    border: 1.5px solid var(--border); border-radius: 10px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.9rem;
+    background: var(--cream); color: var(--ink); outline: none; transition: border-color 0.2s;
+  }
+  .setup-fields input:focus { border-color: var(--red); }
+  .error-msg { color: #c0392b; font-size: 0.82rem; margin-top: 0.3rem; display: none; }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--warm-white); border: 1px solid var(--border);
+    border-radius: 20px; padding: 2rem; margin-bottom: 1.5rem;
+    box-shadow: 0 2px 20px var(--shadow);
+  }
+  .card h2 { font-family: 'Playfair Display', serif; font-size: 1.25rem; margin-bottom: 1.25rem; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    padding: 0.7rem 1.4rem; border: none; border-radius: 10px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 600;
+    cursor: pointer; transition: transform 0.15s, opacity 0.15s;
+    display: inline-flex; align-items: center; gap: 0.4rem;
+  }
+  .btn:hover { opacity: 0.88; transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); opacity: 1; }
+  .btn-primary { background: var(--ink); color: #fff; }
+  .btn-green { background: var(--green); color: #fff; }
+  .btn-red { background: var(--red); color: #fff; width: 100%; justify-content: center; margin-top: 0.5rem; }
+  .btn:disabled { opacity: 0.45; pointer-events: none; }
+  .btn-copy-ok { background: var(--green-light); color: var(--green); border: 1.5px solid var(--green); }
+
+  /* ── STATUS BAR ── */
+  .status-bar {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.8rem 1.2rem; border-radius: 12px; margin-bottom: 1.5rem;
+    font-size: 0.85rem; font-weight: 500;
+  }
+  .status-bar.saving { background: #fff8e6; border: 1.5px solid #f0d080; color: #7a5c00; }
+  .status-bar.saved  { background: var(--green-light); border: 1.5px solid #a8e6cc; color: #1a6645; }
+  .status-bar.error  { background: #fdeee9; border: 1.5px solid #f5b8a4; color: #8b2e14; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .saving .status-dot { background: #e6b800; animation: pulse 1s infinite; }
+  .saved  .status-dot { background: var(--green); }
+  .error  .status-dot { background: var(--red); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* ── SHARE ── */
+  .share-row {
+    display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+    padding: 1rem 1.2rem; background: var(--green-light);
+    border: 1.5px solid #a8e6cc; border-radius: 14px; margin-bottom: 1.5rem;
+  }
+  .share-row .share-info { flex: 1; min-width: 140px; }
+  .share-row .share-info strong { font-size: 0.9rem; color: #1a6645; display: block; }
+  .share-row .share-info span { font-size: 0.78rem; color: #2e9060; }
+  .share-url-box {
+    flex: 2; min-width: 160px; font-size: 0.75rem; color: var(--muted);
+    background: #fff; border: 1px solid #a8e6cc; border-radius: 8px;
+    padding: 0.45rem 0.75rem; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; font-family: monospace;
+  }
+
+  /* ── NAME ROW ── */
+  .name-row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
+  .name-row input {
+    flex: 1; min-width: 180px; padding: 0.7rem 1rem;
+    border: 1.5px solid var(--border); border-radius: 10px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
+    background: var(--cream); color: var(--ink); outline: none; transition: border-color 0.2s;
+  }
+  .name-row input:focus { border-color: var(--red); }
+
+  .people-list { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
+  .chip {
+    display: flex; align-items: center; gap: 0.4rem;
+    padding: 0.35rem 0.75rem 0.35rem 0.6rem;
+    border-radius: 100px; font-size: 0.85rem; font-weight: 500;
+    cursor: pointer; border: 2px solid transparent; transition: all 0.18s; user-select: none;
+  }
+  .chip.active { border-color: currentColor; }
+  .chip .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .chip .remove { margin-left: 2px; opacity: 0.5; font-size: 0.8rem; cursor: pointer; }
+  .chip .remove:hover { opacity: 1; }
+
+  /* ── CALENDAR ── */
+  .month-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+  .month-nav h3 { font-family: 'Playfair Display', serif; font-size: 1.15rem; }
+  .nav-btn {
+    background: none; border: 1.5px solid var(--border); border-radius: 8px;
+    width: 36px; height: 36px; cursor: pointer; font-size: 1.1rem; color: var(--ink);
+    display: flex; align-items: center; justify-content: center; transition: background 0.15s;
+  }
+  .nav-btn:hover { background: var(--border); }
+
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cal-day-label {
+    text-align: center; font-size: 0.72rem; font-weight: 600;
+    letter-spacing: 0.06em; color: var(--muted); padding: 0.3rem 0; text-transform: uppercase;
+  }
+  .cal-day {
+    aspect-ratio: 1; border-radius: 10px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    position: relative; cursor: pointer; border: 1.5px solid transparent;
+    transition: all 0.15s; padding: 2px;
+  }
+  .cal-day.empty { cursor: default; }
+  .cal-day:not(.empty):not(.past):hover { border-color: var(--border); transform: scale(1.04); }
+  .cal-day.past { opacity: 0.35; cursor: default; pointer-events: none; }
+  .cal-day .day-num { font-size: 0.85rem; font-weight: 500; line-height: 1; }
+  .cal-day .dots { display: flex; gap: 2px; margin-top: 3px; flex-wrap: wrap; justify-content: center; max-width: 90%; }
+  .cal-day .dots span { width: 5px; height: 5px; border-radius: 50%; display: block; }
+  .cal-day.recommended { background: #1a1612; border-color: #1a1612; }
+  .cal-day.recommended .day-num { color: #fff; }
+  .cal-day .tooltip {
+    display: none; position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: #fff; font-size: 0.72rem; padding: 0.35rem 0.65rem;
+    border-radius: 7px; white-space: nowrap; z-index: 200; pointer-events: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+  .cal-day:hover .tooltip { display: block; }
+  .cal-day .tooltip::after {
+    content: ''; position: absolute; top: 100%; left: 50%;
+    transform: translateX(-50%); border: 5px solid transparent; border-top-color: var(--ink);
+  }
+
+  .legend { display: flex; gap: 1.25rem; flex-wrap: wrap; font-size: 0.82rem; color: var(--muted); margin-top: 1rem; align-items: center; }
+  .legend-item { display: flex; gap: 0.4rem; align-items: center; }
+  .legend-swatch { width: 14px; height: 14px; border-radius: 4px; }
+
+  /* ── RECOMMENDATIONS ── */
+  .rec-list { display: flex; flex-direction: column; gap: 0.6rem; }
+  .rec-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.9rem 1.2rem; border-radius: 12px;
+    border: 1.5px solid var(--border); background: var(--cream); gap: 1rem;
+  }
+  .rec-item.top { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .rec-item .rec-date { font-weight: 600; font-size: 0.95rem; }
+  .rec-item .rec-meta { font-size: 0.8rem; opacity: 0.65; margin-top: 1px; }
+  .rec-item .rec-badge {
+    font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.65rem;
+    border-radius: 100px; white-space: nowrap;
+  }
+  .top .rec-badge { background: rgba(255,255,255,0.2); color: #fff; }
+  .rec-item:not(.top) .rec-badge { background: var(--border); color: var(--muted); }
+
+  /* Loading overlay */
+  .loading {
+    text-align: center; padding: 3rem 1rem; color: var(--muted);
+    font-size: 0.95rem;
+  }
+  .spinner {
+    width: 32px; height: 32px; border: 3px solid var(--border);
+    border-top-color: var(--ink); border-radius: 50%;
+    animation: spin 0.8s linear infinite; margin: 0 auto 1rem;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 500px) {
+    .card { padding: 1.25rem; }
+    .cal-day .day-num { font-size: 0.75rem; }
+    .setup-screen { padding: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>When can we <span>meet?</span></h1>
+    <p>Mark the days you're <em>not</em> available — we'll find the perfect date.</p>
+  </header>
+
+  <!-- Loading -->
+  <div id="loadingScreen" class="card loading" style="display:none">
+    <div class="spinner"></div>
+    Loading your group's availability…
+  </div>
+
+  <!-- Setup (only shown to the person creating the group) -->
+  <div class="setup-screen" id="setupScreen">
+    <h2>Quick setup — takes 2 minutes</h2>
+    <p>You only do this once. After setup, you'll get a single link to share — your friends open it and land straight on the calendar, no setup needed.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-text">Go to <a href="https://jsonbin.io" target="_blank">jsonbin.io</a> and create a free account.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-text">Click <strong>API Keys</strong> in the top menu. Copy the <strong>X-MASTER-KEY</strong> shown on that page.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-text">Paste it below and click <strong>Create</strong>. Share the link — friends land straight on the calendar. ✓</div>
+      </div>
+    </div>
+
+    <div class="setup-fields">
+      <div>
+        <label>Your JSONBin X-Master-Key</label>
+        <input type="text" id="apiKeyInput" placeholder="$2a$10$..." autocomplete="off" />
+      </div>
+      <button class="btn btn-red" id="createBtn" onclick="createBin()">Create my group link →</button>
+      <div class="error-msg" id="setupError"></div>
+    </div>
+  </div>
+
+  <!-- Main app -->
+  <div id="mainApp" style="display:none">
+
+    <div class="status-bar saved" id="statusBar">
+      <div class="status-dot"></div>
+      <span id="statusText">All changes saved</span>
+    </div>
+
+    <div class="share-row">
+      <div class="share-info">
+        <strong>🔗 Share this link with your friends</strong>
+        <span>They'll land straight on the calendar — no setup needed.</span>
+      </div>
+      <div class="share-url-box" id="shareUrlBox"></div>
+      <button class="btn btn-green" id="copyBtn" onclick="copyLink()">Copy link</button>
+    </div>
+
+    <div class="card">
+      <h2>Who's joining?</h2>
+      <div class="name-row">
+        <input type="text" id="nameInput" placeholder="Enter your name…" maxlength="30" />
+        <button class="btn btn-primary" onclick="addPerson()">Add</button>
+      </div>
+      <div class="people-list" id="peopleList"></div>
+    </div>
+
+    <div class="card" id="calCard" style="display:none">
+      <div class="month-nav">
+        <button class="nav-btn" onclick="changeMonth(-1)">&#8592;</button>
+        <h3 id="monthLabel"></h3>
+        <button class="nav-btn" onclick="changeMonth(1)">&#8594;</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="legend" id="legend"></div>
+    </div>
+
+    <div class="card" id="recCard" style="display:none">
+      <h2>Best days to meet 🎉</h2>
+      <div class="rec-list" id="recList"></div>
+    </div>
+
+  </div>
+
+</div>
+<script>
+const COLORS = [
+  { main: '#e05c3a', light: '#fdeee9' },
+  { main: '#3a7dd4', light: '#e8f1fb' },
+  { main: '#2baa72', light: '#e3f7ee' },
+  { main: '#c45fc4', light: '#f7e8f7' },
+  { main: '#d4943a', light: '#fbf2e3' },
+  { main: '#3aadcc', light: '#e3f6fb' },
+  { main: '#7b5ea7', light: '#f0ebfa' },
+  { main: '#bf4b6e', light: '#fae8ee' },
+];
+
+let API_KEY = '';
+let BIN_ID  = '';
+let people      = [];
+let unavailable = {};
+let activePerson = null;
+let saveTimer = null;
+let isSaving = false;
+
+const now = new Date();
+let viewYear  = now.getFullYear();
+let viewMonth = now.getMonth();
+
+// ── URL helpers ────────────────────────────────────────────
+// Hash format:  BINID|APIKEY  (both encoded)
+function buildHash(binId, apiKey) {
+  return btoa(binId + '|' + apiKey);
+}
+function parseHash(hash) {
+  try {
+    const decoded = atob(hash);
+    const idx = decoded.indexOf('|');
+    if (idx < 0) return null;
+    return { binId: decoded.slice(0, idx), apiKey: decoded.slice(idx + 1) };
+  } catch { return null; }
+}
+function getShareUrl() {
+  const url = new URL(window.location.href);
+  url.hash = buildHash(BIN_ID, API_KEY);
+  return url.toString();
+}
+
+function copyLink() {
+  navigator.clipboard.writeText(getShareUrl()).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = '✓ Copied!';
+    btn.className = 'btn btn-copy-ok';
+    setTimeout(() => { btn.textContent = 'Copy link'; btn.className = 'btn btn-green'; }, 2200);
+  });
+}
+
+// ── JSONBin API ────────────────────────────────────────────
+async function apiFetch(url, method = 'GET', body = null) {
+  const opts = {
+    method,
+    headers: { 'X-Master-Key': API_KEY, 'Content-Type': 'application/json', 'X-Bin-Versioning': 'false' }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(url, opts);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+async function createBin() {
+  API_KEY = document.getElementById('apiKeyInput').value.trim();
+  if (!API_KEY) { showErr('setupError', 'Please paste your X-Master-Key.'); return; }
+  const btn = document.getElementById('createBtn');
+  btn.textContent = 'Creating…'; btn.disabled = true;
+  hideErr('setupError');
+  try {
+    const data = await apiFetch('https://api.jsonbin.io/v3/b', 'POST', {
+      record: { people: [], unavailable: {} },
+      private: false
+    });
+    BIN_ID = data.metadata.id;
+    people = []; unavailable = {};
+    pushHash();
+    launchApp();
+  } catch {
+    showErr('setupError', 'Could not connect. Double-check your API key and try again.');
+    btn.textContent = 'Create my group link →'; btn.disabled = false;
+  }
+}
+
+async function saveRemote() {
+  if (isSaving) return;
+  isSaving = true;
+  setStatus('saving', 'Saving…');
+  try {
+    await apiFetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, 'PUT', { people, unavailable });
+    setStatus('saved', 'All changes saved ✓');
+  } catch {
+    setStatus('error', 'Save failed — check your connection.');
+  }
+  isSaving = false;
+}
+
+async function refreshFromRemote() {
+  try {
+    const data = await apiFetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`);
+    people      = data.record.people      || [];
+    unavailable = data.record.unavailable || {};
+    if (!people.find(p => p.name === activePerson)) activePerson = people[0]?.name || null;
+    render();
+  } catch {}
+}
+
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  setStatus('saving', 'Saving…');
+  saveTimer = setTimeout(saveRemote, 800);
+}
+
+function pushHash() {
+  const url = new URL(window.location.href);
+  url.hash = buildHash(BIN_ID, API_KEY);
+  window.history.replaceState(null, '', url.toString());
+}
+
+// ── Launch ─────────────────────────────────────────────────
+function launchApp() {
+  document.getElementById('setupScreen').style.display = 'none';
+  document.getElementById('loadingScreen').style.display = 'none';
+  document.getElementById('mainApp').style.display = '';
+  document.getElementById('shareUrlBox').textContent = getShareUrl();
+  render();
+  setInterval(refreshFromRemote, 15000);
+}
+
+// ── Status ─────────────────────────────────────────────────
+function setStatus(type, msg) {
+  document.getElementById('statusBar').className = 'status-bar ' + type;
+  document.getElementById('statusText').textContent = msg;
+}
+
+function showErr(id, msg) { const el = document.getElementById(id); el.textContent = msg; el.style.display = 'block'; }
+function hideErr(id)      { document.getElementById(id).style.display = 'none'; }
+
+// ── People ─────────────────────────────────────────────────
+function addPerson() {
+  const input = document.getElementById('nameInput');
+  const name = input.value.trim();
+  if (!name) return;
+  if (people.find(p => p.name.toLowerCase() === name.toLowerCase())) { input.value = ''; return; }
+  people.push({ name, colorIdx: people.length % COLORS.length });
+  activePerson = name;
+  input.value = '';
+  scheduleSave(); render();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('nameInput')?.addEventListener('keydown', e => { if (e.key === 'Enter') addPerson(); });
+});
+
+function removePerson(name) {
+  people = people.filter(p => p.name !== name);
+  for (const k in unavailable) {
+    unavailable[k] = unavailable[k].filter(n => n !== name);
+    if (!unavailable[k].length) delete unavailable[k];
+  }
+  if (activePerson === name) activePerson = people[0]?.name || null;
+  scheduleSave(); render();
+}
+
+function setActive(name) { activePerson = name; renderPeople(); }
+
+function renderPeople() {
+  const el = document.getElementById('peopleList');
+  if (!el) return;
+  el.innerHTML = '';
+  people.forEach(p => {
+    const c = COLORS[p.colorIdx];
+    const chip = document.createElement('div');
+    chip.className = 'chip' + (activePerson === p.name ? ' active' : '');
+    chip.style.cssText = `background:${c.light};color:${c.main}`;
+    chip.innerHTML = `<span class="dot" style="background:${c.main}"></span>${esc(p.name)}<span class="remove" title="Remove">✕</span>`;
+    chip.querySelector('.remove').addEventListener('click', e => { e.stopPropagation(); removePerson(p.name); });
+    chip.addEventListener('click', () => setActive(p.name));
+    el.appendChild(chip);
+  });
+
+  const legend = document.getElementById('legend');
+  if (!legend) return;
+  legend.innerHTML = `<div class="legend-item"><div class="legend-swatch" style="background:#1a1612"></div>Best days</div>`;
+  people.forEach(p => {
+    const c = COLORS[p.colorIdx];
+    legend.innerHTML += `<div class="legend-item"><div class="legend-swatch" style="background:${c.main}"></div>${esc(p.name)} unavailable</div>`;
+  });
+}
+
+// ── Calendar ───────────────────────────────────────────────
+function changeMonth(d) {
+  viewMonth += d;
+  if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+  if (viewMonth < 0)  { viewMonth = 11; viewYear--; }
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const grid = document.getElementById('calGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  document.getElementById('monthLabel').textContent =
+    new Date(viewYear, viewMonth, 1).toLocaleString('en-GB', { month: 'long', year: 'numeric' });
+
+  ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'cal-day-label'; el.textContent = d; grid.appendChild(el);
+  });
+
+  const offset = (new Date(viewYear, viewMonth, 1).getDay() + 6) % 7;
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const best = getBestDays();
+
+  for (let i = 0; i < offset; i++) {
+    const el = document.createElement('div'); el.className = 'cal-day empty'; grid.appendChild(el);
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(viewYear, viewMonth, d);
+    const key = toKey(date);
+    const isPast = date < today;
+    const blockedBy = unavailable[key] || [];
+    const isRec = best.includes(key);
+
+    const el = document.createElement('div');
+    el.className = 'cal-day' + (isPast ? ' past' : '') + (isRec ? ' recommended' : '');
+
+    if (!isRec && blockedBy.length) {
+      const p = people.find(p => p.name === blockedBy[0]);
+      if (p) el.style.background = COLORS[p.colorIdx].light;
+    }
+
+    const tipParts = blockedBy.map(n => `${esc(n)} busy`);
+    if (isRec) tipParts.push('✓ Everyone free!');
+
+    el.innerHTML = `
+      <span class="day-num">${d}</span>
+      <div class="dots">${blockedBy.map(n => {
+        const p = people.find(pp => pp.name === n);
+        return p ? `<span style="background:${COLORS[p.colorIdx].main}"></span>` : '';
+      }).join('')}</div>
+      ${tipParts.length ? `<div class="tooltip">${tipParts.join(' · ')}</div>` : ''}
+    `;
+
+    if (!isPast) el.addEventListener('click', () => toggleDay(key));
+    grid.appendChild(el);
+  }
+}
+
+function toggleDay(key) {
+  if (!activePerson) return;
+  if (!unavailable[key]) unavailable[key] = [];
+  const idx = unavailable[key].indexOf(activePerson);
+  if (idx >= 0) unavailable[key].splice(idx, 1);
+  else unavailable[key].push(activePerson);
+  if (!unavailable[key].length) delete unavailable[key];
+  scheduleSave(); render();
+}
+
+// ── Recommendations ────────────────────────────────────────
+function getBestDays() {
+  if (!people.length) return [];
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const free = [];
+  for (let i = 0; i < 90; i++) {
+    const d = new Date(today); d.setDate(today.getDate() + i);
+    const key = toKey(d);
+    if (!unavailable[key]?.length) free.push(key);
+  }
+  return free.slice(0, 5);
+}
+
+function renderRecommendations() {
+  const card = document.getElementById('recCard');
+  const list = document.getElementById('recList');
+  if (!card || !list) return;
+  list.innerHTML = '';
+  if (!people.length) { card.style.display = 'none'; return; }
+  card.style.display = '';
+
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const scored = [];
+  for (let i = 0; i < 90; i++) {
+    const d = new Date(today); d.setDate(today.getDate() + i);
+    const key = toKey(d);
+    const blocked = unavailable[key] || [];
+    scored.push({ date: d, free: people.length - blocked.length, blocked });
+  }
+  scored.sort((a, b) => b.free - a.free || a.date - b.date);
+
+  scored.slice(0, 5).forEach((item, i) => {
+    const dateStr = item.date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+    const meta = item.blocked.length ? `${item.blocked.join(', ')} can't make it` : 'Everyone is free!';
+    const el = document.createElement('div');
+    el.className = 'rec-item' + (i === 0 ? ' top' : '');
+    el.innerHTML = `
+      <div><div class="rec-date">${dateStr}</div><div class="rec-meta">${meta}</div></div>
+      <div class="rec-badge">${item.free}/${people.length} free</div>
+    `;
+    list.appendChild(el);
+  });
+}
+
+function render() {
+  const has = people.length > 0;
+  const calCard = document.getElementById('calCard');
+  if (calCard) calCard.style.display = has ? '' : 'none';
+  renderPeople();
+  renderCalendar();
+  renderRecommendations();
+}
+
+function toKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Init ───────────────────────────────────────────────────
+(async () => {
+  const hash = window.location.hash.slice(1);
+  if (hash) {
+    const parsed = parseHash(hash);
+    if (parsed) {
+      BIN_ID  = parsed.binId;
+      API_KEY = parsed.apiKey;
+      document.getElementById('setupScreen').style.display = 'none';
+      document.getElementById('loadingScreen').style.display = '';
+      try {
+        const data = await apiFetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`);
+        people      = data.record.people      || [];
+        unavailable = data.record.unavailable || {};
+        activePerson = people[0]?.name || null;
+        launchApp();
+      } catch {
+        document.getElementById('loadingScreen').style.display = 'none';
+        document.getElementById('setupScreen').style.display = '';
+        showErr('setupError', 'Could not load the group data. The link may be invalid.');
+      }
+      return;
+    }
+  }
+  // No valid hash — show setup
+  document.getElementById('setupScreen').style.display = '';
+})();
+</script>
+</body>
+</html>
